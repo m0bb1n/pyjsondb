@@ -50,22 +50,56 @@ class Table (object):
         return table
 
     def find_models(self, keymap={}):
-        found = []
+        models = []
+        found_ids = []
         if keymap == {}:
             return self.models.values()
 
         for id in self.models:
+            value_found = False
+            value_used = False
+
+            multi_value_found = False
+            multi_value_used = False
+
             for key in keymap.keys():
-                if self.models[id][key] == keymap[key]:
-                    found.append(self.models[id])
+                if key not in self.keys:
+                    raise KeyError("Key '{}' doesn't exist in table '{}'".format(key, self.tablename))
 
-        return found
+                if type(keymap[key]) == type(list()):
+                    found = False
 
-    def find_by_id(self, id):
-        try:
-            return self.models[str(id)]
-        except KeyError:
-            return {}
+                    multi_value_used = True
+
+                    for value in keymap[key]:
+                        if self.models[id][key] == value:
+                            found = True
+
+                    if multi_value_used == False:
+                        multi_value_found = found
+                        multi_value_used = True
+
+                    multi_value_found = multi_value_found and found
+
+                else:
+                    found = False
+
+                    if (self.models[id][key] == keymap[key]):
+                        found = True
+
+                    if value_used == False:
+                        value_found = found
+                        value_used = True
+
+                    value_found = value_found and found
+
+
+            found = (not value_used or value_found) and (not multi_value_used or multi_value_found)
+            if (found and id not in found_ids):
+                found_ids.append(id)
+                models.append(self.models[id])
+
+        return models
 
     def insert(self, keymap={}):
         self.row_num+=1
